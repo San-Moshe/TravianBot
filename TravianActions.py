@@ -34,13 +34,13 @@ class TravianUtils:
         self.driver.find_element_by_xpath("//input[@type='submit']").click()
         self.web_driver_wait.until(EC.visibility_of_element_located((By.XPATH, "//input[@type='submit']"))).click()
 
-    def raid_farm_from_farm_list(self):
+    def raid_farm_from_farm_list(self, number_of_troops):
         self.driver.get(self.base_url + "farmlist.php")
         self.driver.implicitly_wait(2)
         farms = self.driver.find_elements_by_partial_link_text("Farm")
         farms_links = tuple(map(lambda farm: farm.get_attribute("href"), farms))
         for farm_link in farms_links:
-            self.raid_farm_by_link(farm_link, "1300")
+            self.raid_farm_by_link(farm_link, number_of_troops)
 
     def raid_batch_farm_list(self):
         captcha_solution = "0"
@@ -64,3 +64,21 @@ class TravianUtils:
         oasis_url = self.driver.current_url
         self.driver.close()
         FileUtils.append_to_file(oasis_url)
+
+    def raid_custom_farm_list(self, number_of_troops):
+        for farm in FileUtils.read_all_oasis_from_file():
+            self.raid_farm_by_link(farm, number_of_troops)
+
+    def train_soldiers_in_barracks(self, **kwargs):
+        self.driver.get("//area[contains(@alt,'Barracks')]")
+        for key, value in kwargs:
+            self.web_driver_wait.until(EC.visibility_of_element_located((By.ID, key))).send_keys(value)
+
+        self.driver.find_element_by_id("btn_train").click()
+
+    def train_soldiers_in_stable(self, **kwargs):
+        self.driver.get("//area[contains(@alt,'Stable')]")
+        for key, value in kwargs:
+            self.web_driver_wait.until(EC.visibility_of_element_located((By.ID, key))).send_keys(value)
+
+        self.driver.find_element_by_id("btn_train").click()
