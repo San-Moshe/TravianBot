@@ -106,42 +106,66 @@ class MainPage(Frame):
         labelframe.grid(row=2, columnspan=7, sticky='WE',
                         padx=5, pady=5, ipadx=5, ipady=5)
 
-        Button(self, text="Raid", command=self.travian_controller.auto_mode)
-
-        is_oasis = IntVar()
-        is_farms = IntVar()
-        is_stable = IntVar()
-        is_barracks = IntVar()
-        is_batch = IntVar()
-        troops_type = TroopsType(1)
+        farm_type_auto = IntVar()
+        is_stable = BooleanVar()
+        is_barracks = BooleanVar()
+        is_batch = BooleanVar()
+        troops_training_type_auto = IntVar()
         auto_mode_label_frame = LabelFrame(self, text="Auto mode")
-        C1 = Checkbutton(auto_mode_label_frame, text="Oasis", variable=is_oasis,
-                         onvalue=1, offvalue=0, height=5,
-                         width=20).grid(row=3, column=0)
-        C2 = Checkbutton(auto_mode_label_frame, text="Farms", variable=is_farms,
-                         onvalue=1, offvalue=0, height=5,
-                         width=20).grid(row=3, column=1)
-        C3 = Checkbutton(auto_mode_label_frame, text="Stable", variable=is_stable,
-                         onvalue=1, offvalue=0, height=5,
-                         width=20).grid(row=3, column=2)
-        C4 = Checkbutton(auto_mode_label_frame, text="Barracks", variable=is_barracks,
-                         onvalue=1, offvalue=0, height=5,
-                         width=20).grid(row=3, column=3)
-        C5 = Checkbutton(auto_mode_label_frame, text="Batch", variable=is_batch,
-                         onvalue=1, offvalue=0, height=5,
-                         width=20).grid(row=3, column=4)
+        Checkbutton(auto_mode_label_frame, text="Stable", variable=is_stable,
+                    onvalue=True, offvalue=False, height=5,
+                    width=20).grid(row=3, column=2)
+        Checkbutton(auto_mode_label_frame, text="Barracks", variable=is_barracks,
+                    onvalue=True, offvalue=False, height=5,
+                    width=20).grid(row=3, column=3)
+        Checkbutton(auto_mode_label_frame, text="Batch", variable=is_batch,
+                    onvalue=True, offvalue=False, height=5,
+                    width=20).grid(row=3, column=4)
 
         troops_type_label_frame = LabelFrame(auto_mode_label_frame, text="Troops Training Type")
 
-        Radiobutton(troops_type_label_frame, text="Attacker", variable=troops_type,
-                    indicatoron=False, value="off", width=8).grid(
+        Radiobutton(troops_type_label_frame, text="Attacker", variable=troops_training_type_auto,
+                    indicatoron=False, value=TroopsType.ATTACKER.value, width=8).grid(
             row=4, column=0)
-        Radiobutton(troops_type_label_frame, text="Defender", variable=troops_type,
-                    indicatoron=False, value="on", width=8).grid(
+        Radiobutton(troops_type_label_frame, text="Defender", variable=troops_training_type_auto,
+                    indicatoron=False, value=TroopsType.DEFENDER.value, width=8).grid(
             row=4, column=1)
 
-        Button(auto_mode_label_frame, text="Start Auto Mode", command=self.travian_controller.auto_mode).grid(row=5,
-                                                                                                              column=5)
+        auto_mode_farm_raid_frame = LabelFrame(auto_mode_label_frame, text="Farms Raid")
+        Radiobutton(auto_mode_farm_raid_frame, text="Oasis", variable=farm_type_auto,
+                    indicatoron=False, value=FarmType.OASIS.value, width=8).grid(
+            row=5, column=0)
+        Radiobutton(auto_mode_farm_raid_frame, text="Farm", variable=farm_type_auto,
+                    indicatoron=False, value=FarmType.NORMAL_FARM.value, width=8).grid(
+            row=5, column=1)
+
+        troops_raid_type_auto = IntVar()
+        Radiobutton(auto_mode_farm_raid_frame, text="Infantry Attacker", variable=troops_raid_type_auto,
+                    value=TroopsRaidType.INFANTRY_ATTACKER.value,
+                    width=16).grid(
+            row=6, column=1)
+        Radiobutton(auto_mode_farm_raid_frame, text="Infantry Defender", variable=troops_raid_type_auto,
+                    value=TroopsRaidType.INFANTRY_DEFENDER.value,
+                    width=16).grid(
+            row=7, column=1)
+        Radiobutton(auto_mode_farm_raid_frame, text="Cavalry Attacker", variable=troops_raid_type_auto,
+                    value=TroopsRaidType.STABLE_ATTACKER.value,
+                    width=16).grid(
+            row=8, column=1)
+        Radiobutton(auto_mode_farm_raid_frame, text="Cavalry Defender", variable=troops_raid_type_auto,
+                    value=TroopsRaidType.STABLE_DEFENDER.value,
+                    width=16).grid(
+            row=9, column=1)
+        Label(auto_mode_farm_raid_frame, text="Number Of Soldiers").grid(row=6, column=0)
+        number_of_troops_auto = Entry(auto_mode_farm_raid_frame, bd=5)
+        number_of_troops_auto.grid(row=6, column=1)
+        Button(auto_mode_label_frame, text="Start Auto Mode",
+               command=partial(self.on_start_auto_mode_click, farm_type_auto, number_of_troops_auto, is_batch,
+                               is_barracks,
+                               is_stable, troops_training_type_auto, troops_raid_type_auto)).grid(row=5,
+                                                                                                  column=5)
+        auto_mode_farm_raid_frame.grid(row=5, columnspan=7, sticky='WE',
+                                       padx=5, pady=5, ipadx=5, ipady=5)
         troops_type_label_frame.grid(row=4, columnspan=7, sticky='WE',
                                      padx=5, pady=5, ipadx=5, ipady=5)
         auto_mode_label_frame.grid(row=3, columnspan=7, sticky='WE',
@@ -192,8 +216,13 @@ class MainPage(Frame):
         Button(farm_list_label_frame, text="Farm raid",
                command=self.on_farm_raid_click).grid(row=6, column=2)
 
+    def on_start_auto_mode_click(self, farm_type, number_of_troops, is_batch, is_barracks, is_stable,
+                                 troops_training_type, troops_raiding_type):
+        self.travian_controller.auto_mode(farm_type.get(), number_of_troops.get(), is_batch.get(), is_barracks.get(),
+                                          is_stable.get(), troops_training_type.get(), troops_raiding_type.get())
+
     def on_add_farms_to_farm_list_click(self, troops_type, number_of_troops_entry):
-        self.travian_controller.add_farm_account_to_farm_list(troops_type, number_of_troops_entry.get())
+        self.travian_controller.add_farm_account_to_farm_list(troops_type.get(), number_of_troops_entry.get())
         self.r1.grid_forget()
         self.r2.grid_forget()
         self.farm_type_label_frame.grid_forget()

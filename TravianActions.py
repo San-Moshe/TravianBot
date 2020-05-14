@@ -20,9 +20,11 @@ class TravianActions:
     base_url = "https://s2.ss-travi.com/"
     driver = webdriver.Chrome(executable_path="C:\Program Files\ChromeDriver\chromedriver.exe")
     web_driver_wait = WebDriverWait(driver, 2)
+    farms_links = None
 
     def __init__(self):
         self.troops_farm_list_contract = TroopsFarmListContract()
+        self.oasises = FileUtils.read_all_oasis_from_file()
 
     def login(self, username_text, password_text):
         self.driver.get(self.base_url)
@@ -31,6 +33,11 @@ class TravianActions:
         username.send_keys(username_text)
         password.send_keys(password_text)
         self.driver.find_element_by_xpath("//input[@type='submit']").click()
+        self.web_driver_wait.until(EC.visibility_of_element_located((By.ID, "production")))
+        self.driver.get(self.base_url + "farmlist.php")
+        self.driver.implicitly_wait(2)
+        farms = self.driver.find_elements_by_partial_link_text("Farm")
+        self.farms_links = tuple(map(lambda farm: farm.get_attribute("href"), farms))
         self.driver.get(self.base_url + "profile.php")
         return self.web_driver_wait.until(
             EC.visibility_of_element_located(
@@ -54,15 +61,17 @@ class TravianActions:
         self.web_driver_wait.until(EC.visibility_of_element_located((By.XPATH, "//input[@type='submit']"))).click()
 
     def raid_farms_from_farm_list(self, number_of_troops, troops_type, tribe):
-        self.driver.get(self.base_url + "farmlist.php")
-        self.driver.implicitly_wait(2)
-        farms = self.driver.find_elements_by_partial_link_text("Farm")
-        farms_links = tuple(map(lambda farm: farm.get_attribute("href"), farms))
-        relevant_farms = farms_links[self.last_oasis_raid_index % len(farms_links):]
+        relevant_farms = self.farms_links[self.last_oasis_raid_index % len(self.farms_links):]
         for farm in relevant_farms:
             time.sleep(7)
             self.last_farm_raid_index += 1
             self._raid_farm_by_link(farm, number_of_troops, troops_type, tribe, FarmType.NORMAL_FARM)
+
+    def raid_next_farm_from_farm_list(self, number_of_troops, troops_type, tribe):
+        farm = self.farms_links[self.last_farm_raid_index % len(self.farms_links)]
+        time.sleep(7)
+        self.last_farm_raid_index += 1
+        self._raid_farm_by_link(farm, number_of_troops, troops_type, tribe, FarmType.NORMAL_FARM)
 
     def raid_batch_farm_list(self):
         captcha_solution = "0"
@@ -88,15 +97,22 @@ class TravianActions:
         FileUtils.append_to_file(oasis_url)
 
     def raid_custom_farm_list(self, number_of_troops, troops_raid_type, tribe):
-        oasises = FileUtils.read_all_oasis_from_file()
-        relevant_oasises = oasises[self.last_oasis_raid_index % len(oasises):]
+        relevant_oasises = self.oasises[self.last_oasis_raid_index % len(self.oasises):]
         for oasis in relevant_oasises:
             time.sleep(7)
             self.last_oasis_raid_index += 1
             self._raid_farm_by_link(oasis, number_of_troops, troops_raid_type, tribe, FarmType.OASIS)
 
+    def raid_next_farm_in_custom_farm_list(self, number_of_troops, troops_raid_type, tribe):
+        oasis = FileUtils.read_oasis_from_file(self.last_farm_raid_index % len(self.oasises))
+        time.sleep(7)
+        self.last_oasis_raid_index += 1
+        self._raid_farm_by_link(oasis, number_of_troops, troops_raid_type, tribe, FarmType.OASIS)
+
     def train_soldiers_in_barracks(self, troops_type):
-        self.driver.get("//area[contains(@alt,'Barracks')]")
+        self.driver.get(self.base_url + "village2.php")
+        self.web_driver_wait.until(
+            EC.visibility_of_element_located((By.XPATH, "//area[contains(@alt,'Barracks')]"))).get_attribute("href")
         troops_id = None
         if troops_type == TroopsType.ATTACKER:
             troops_id = TroopsBarracksContract.CLUBSWINGER
@@ -109,7 +125,9 @@ class TravianActions:
         self.driver.find_element_by_id("btn_train").click()
 
     def train_soldiers_in_stable(self, troops_type):
-        self.driver.get("//area[contains(@alt,'Stable')]")
+        self.driver.get(self.base_url + "village2.php")
+        self.web_driver_wait.until(
+            EC.visibility_of_element_located((By.XPATH, "//area[contains(@alt,'Stable')]"))).get_attribute("href")
 
         troops_id = None
         if troops_type == TroopsType.ATTACKER:
@@ -123,7 +141,7 @@ class TravianActions:
         self.driver.find_element_by_id("btn_train").click()
 
     def add_farm_account_to_farm_list(self, tribe, troops_raid_type, number_of_soldiers):
-        self.driver.get(self.base_url + "profile.php?uid=6")
+        self.driver.get(self.base_url + "profile.php?uid=13")
         self.driver.implicitly_wait(2)
         elements = list(map(lambda element: element.find_element_by_xpath(".//a").get_attribute("href"),
                             tuple(self.web_driver_wait.until(
@@ -132,6 +150,8 @@ class TravianActions:
             self.driver.get(farm)
             self.web_driver_wait.until(
                 EC.visibility_of_element_located((By.XPATH, r'//*[@id="options"]/tbody/tr[4]/td/a'))).click()
+            self.web_driver_wait.until(EC.visibility_of_element_located(
+                (By.ID, self.troops_farm_list_contract.get_troops_select_by_type(troops_raid_type)))).click()
             self.web_driver_wait.until(EC.visibility_of_element_located(
                 (By.NAME, self.troops_farm_list_contract.get_troops_by_tribe(tribe, troops_raid_type)))).send_keys(
                 number_of_soldiers)

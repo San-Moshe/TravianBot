@@ -53,6 +53,9 @@ class TroopsFarmListContract:
     gauls = {TroopsRaidType.INFANTRY_ATTACKER: "unit1", TroopsRaidType.STABLE_ATTACKER: "unit6",
              TroopsRaidType.INFANTRY_DEFENDER: "unit2", TroopsRaidType.STABLE_DEFENDER: "unit5"}
 
+    all = {TroopsRaidType.INFANTRY_ATTACKER: "u1", TroopsRaidType.STABLE_ATTACKER: "u6",
+           TroopsRaidType.INFANTRY_DEFENDER: "u2", TroopsRaidType.STABLE_DEFENDER: "u5"}
+
     def get_troops_by_tribe(self, tribe, troops_raid_type):
         if tribe == Tribe.TEUTONS:
             return self.teutons[troops_raid_type]
@@ -60,6 +63,9 @@ class TroopsFarmListContract:
             return self.gauls[troops_raid_type]
         elif tribe == Tribe.ROMANS:
             return self.romans[troops_raid_type]
+
+    def get_troops_select_by_type(self, troops_raid_type):
+        return self.all[troops_raid_type]
 
 
 class TroopsCustomFarmListContract:
