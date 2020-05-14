@@ -1,7 +1,7 @@
 import time
 
 from TravianActions import TravianActions
-from TravianContract import Tribe
+from TravianContract import Tribe, FarmType, TroopsRaidType
 
 
 class Controller:
@@ -36,3 +36,9 @@ class Controller:
 
     def add_farm_account_to_farm_list(self, troops_raid_type, number_of_soldiers):
         self.travian_actions.add_farm_account_to_farm_list(self.tribe, troops_raid_type, number_of_soldiers)
+
+    def raid_farms(self, farm_type, troops_type, number_of_troops):
+        if FarmType(farm_type) == FarmType.NORMAL_FARM:
+            self.travian_actions.raid_farms_from_farm_list(number_of_troops, TroopsRaidType(troops_type), self.tribe)
+        else:
+            self.travian_actions.raid_custom_farm_list(number_of_troops, TroopsRaidType(troops_type), self.tribe)

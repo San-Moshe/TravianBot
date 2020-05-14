@@ -10,13 +10,14 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 import CaptchaSolver
 import FileUtils
-from TravianContract import TroopsBarracksContract, TroopsFarmListContract, TroopsType
+from TravianContract import TroopsBarracksContract, TroopsFarmListContract, TroopsType, TroopsCustomFarmListContract, \
+    FarmRaidLink, FarmType
 
 
 class TravianActions:
     last_oasis_raid_index = 0
     last_farm_raid_index = 0
-    base_url = "https://s1.ss-travi.com/"
+    base_url = "https://s2.ss-travi.com/"
     driver = webdriver.Chrome(executable_path="C:\Program Files\ChromeDriver\chromedriver.exe")
     web_driver_wait = WebDriverWait(driver, 2)
 
@@ -35,16 +36,24 @@ class TravianActions:
             EC.visibility_of_element_located(
                 (By.XPATH, r'//*[@id="profile"]/tbody/tr[2]/td[1]/table/tbody/tr[2]/td'))).text
 
-    def _raid_farm_by_link(self, farm_link, number_of_troops):
+    def _raid_farm_by_link(self, farm_link, number_of_troops, troops_raid_type, tribe, farm_type):
         self.driver.get(farm_link)
-        self.web_driver_wait.until(EC.visibility_of_element_located((By.LINK_TEXT, "» Send troops"))).click()
-        club = self.web_driver_wait.until(EC.visibility_of_element_located((By.ID, "t1")))
-        club.send_keys(number_of_troops)
+
+        farm_raid_text_link = None
+        if farm_type == FarmType.NORMAL_FARM:
+            farm_raid_text_link = FarmRaidLink.NORMAL_FARM
+        else:
+            farm_raid_text_link = FarmRaidLink.OASIS
+
+        self.web_driver_wait.until(EC.visibility_of_element_located((By.LINK_TEXT, farm_raid_text_link.value))).click()
+        troop = self.web_driver_wait.until(EC.visibility_of_element_located(
+            (By.ID, TroopsCustomFarmListContract().get_troops_by_tribe(tribe, troops_raid_type))))
+        troop.send_keys(number_of_troops)
         self.driver.find_element_by_xpath("//input[@type='radio'][@value = '4']").click()
         self.driver.find_element_by_xpath("//input[@type='submit']").click()
         self.web_driver_wait.until(EC.visibility_of_element_located((By.XPATH, "//input[@type='submit']"))).click()
 
-    def raid_farms_from_farm_list(self, number_of_troops):
+    def raid_farms_from_farm_list(self, number_of_troops, troops_type, tribe):
         self.driver.get(self.base_url + "farmlist.php")
         self.driver.implicitly_wait(2)
         farms = self.driver.find_elements_by_partial_link_text("Farm")
@@ -53,7 +62,7 @@ class TravianActions:
         for farm in relevant_farms:
             time.sleep(7)
             self.last_farm_raid_index += 1
-            self._raid_farm_by_link(farm, number_of_troops)
+            self._raid_farm_by_link(farm, number_of_troops, troops_type, tribe, FarmType.NORMAL_FARM)
 
     def raid_batch_farm_list(self):
         captcha_solution = "0"
@@ -78,13 +87,13 @@ class TravianActions:
         self.driver.close()
         FileUtils.append_to_file(oasis_url)
 
-    def raid_custom_farm_list(self, number_of_troops):
+    def raid_custom_farm_list(self, number_of_troops, troops_raid_type, tribe):
         oasises = FileUtils.read_all_oasis_from_file()
         relevant_oasises = oasises[self.last_oasis_raid_index % len(oasises):]
         for oasis in relevant_oasises:
             time.sleep(7)
             self.last_oasis_raid_index += 1
-            self._raid_farm_by_link(oasis, number_of_troops)
+            self._raid_farm_by_link(oasis, number_of_troops, troops_raid_type, tribe, FarmType.OASIS)
 
     def train_soldiers_in_barracks(self, troops_type):
         self.driver.get("//area[contains(@alt,'Barracks')]")

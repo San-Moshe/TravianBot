@@ -6,7 +6,7 @@ from pynput.mouse import Listener, Button as Btn
 
 from Controller import Controller
 from TravianActions import TravianActions
-from TravianContract import TroopsRaidType, TroopsType
+from TravianContract import TroopsRaidType, TroopsType, FarmType
 
 
 def main():
@@ -90,6 +90,7 @@ class MainPage(Frame):
     def __init__(self, parent, controller, travian_controller, **kw):
         Frame.__init__(self, parent)
         super().__init__(**kw)
+
         self.controller = controller
         self.travian_controller = travian_controller
 
@@ -149,38 +150,65 @@ class MainPage(Frame):
         farm_list_label_frame = LabelFrame(self, text="Farm List")
         troops_raid_type_label_frame = LabelFrame(farm_list_label_frame, text="Troops Raid Type")
 
-        troops_raid_type = TroopsRaidType(1)
-        Radiobutton(troops_raid_type_label_frame, text="Infantry Attacker", variable=troops_raid_type,
-                    value=TroopsRaidType.INFANTRY_ATTACKER,
+        self.troops_raid_type = IntVar()
+        Radiobutton(troops_raid_type_label_frame, text="Infantry Attacker", variable=self.troops_raid_type,
+                    value=TroopsRaidType.INFANTRY_ATTACKER.value,
                     width=16).grid(
             row=6, column=1)
-        Radiobutton(troops_raid_type_label_frame, text="Infantry Defender", variable=troops_raid_type,
-                    value=TroopsRaidType.INFANTRY_DEFENDER,
+        Radiobutton(troops_raid_type_label_frame, text="Infantry Defender", variable=self.troops_raid_type,
+                    value=TroopsRaidType.INFANTRY_DEFENDER.value,
                     width=16).grid(
             row=7, column=1)
-        Radiobutton(troops_raid_type_label_frame, text="Cavalry Attacker", variable=troops_raid_type,
-                    value=TroopsRaidType.STABLE_ATTACKER,
+        Radiobutton(troops_raid_type_label_frame, text="Cavalry Attacker", variable=self.troops_raid_type,
+                    value=TroopsRaidType.STABLE_ATTACKER.value,
                     width=16).grid(
             row=8, column=1)
-        Radiobutton(troops_raid_type_label_frame, text="Cavalry Defender", variable=troops_raid_type,
-                    value=TroopsRaidType.STABLE_DEFENDER,
+        Radiobutton(troops_raid_type_label_frame, text="Cavalry Defender", variable=self.troops_raid_type,
+                    value=TroopsRaidType.STABLE_DEFENDER.value,
                     width=16).grid(
             row=9, column=1)
-        Label(farm_list_label_frame, text="Number Of Soldiers").grid(row=7, column=0)
-        number_of_troops_entry = Entry(farm_list_label_frame, bd=5)
-        number_of_troops_entry.grid(row=7, column=3)
-        troops_raid_type_label_frame.grid(row=6, columnspan=7, sticky='WE',
+        Label(farm_list_label_frame, text="Number Of Soldiers").grid(row=2, column=0)
+        self.number_of_troops_entry = Entry(farm_list_label_frame, bd=5)
+        self.number_of_troops_entry.grid(row=2, column=2)
+
+        self.farm_type = IntVar()
+        self.farm_type_label_frame = LabelFrame(farm_list_label_frame, text="Farm Type")
+        self.r1 = Radiobutton(self.farm_type_label_frame, text="Oasis", variable=self.farm_type,
+                              indicatoron=False, value=FarmType.OASIS.value, width=8)
+        self.r2 = Radiobutton(self.farm_type_label_frame, text="Farm", variable=self.farm_type,
+                              indicatoron=False, value=FarmType.NORMAL_FARM.value, width=8)
+        troops_raid_type_label_frame.grid(row=1, columnspan=6, sticky='WE',
                                           padx=5, pady=5, ipadx=5, ipady=5)
         farm_list_label_frame.grid(row=6, columnspan=7, sticky='WE',
                                    padx=5, pady=5, ipadx=5, ipady=5)
 
-        farm_list_action = partial(self.on_add_farms_to_farm_list_click, troops_raid_type,
-                                   number_of_troops_entry)
-        Button(self, text="Farm account to farm list",
-               command=farm_list_action).grid(row=6, column=5)
+        self.send_btn = Button(self.farm_type_label_frame, text="Send",
+                               command=partial(self.on_farm_raid_send_click, self.farm_type, self.troops_raid_type,
+                                               self.number_of_troops_entry))
+        farm_list_action = partial(self.on_add_farms_to_farm_list_click, self.troops_raid_type,
+                                   self.number_of_troops_entry)
+        Button(farm_list_label_frame, text="Farm account to farm list",
+               command=farm_list_action).grid(row=6, column=0)
+        Button(farm_list_label_frame, text="Farm raid",
+               command=self.on_farm_raid_click).grid(row=6, column=2)
 
     def on_add_farms_to_farm_list_click(self, troops_type, number_of_troops_entry):
         self.travian_controller.add_farm_account_to_farm_list(troops_type, number_of_troops_entry.get())
+        self.r1.grid_forget()
+        self.r2.grid_forget()
+        self.farm_type_label_frame.grid_forget()
+
+    def on_farm_raid_send_click(self, farm_type, troops_type, number_of_troops=None):
+        self.travian_controller.raid_farms(farm_type.get(), troops_type.get(), number_of_troops.get())
+
+    def on_farm_raid_click(self):
+        self.r1.grid(
+            row=6, column=6)
+        self.r2.grid(
+            row=6, column=7)
+        self.farm_type_label_frame.grid(row=1, column=7, columnspan=6, sticky='WE',
+                                        padx=5, pady=5, ipadx=5, ipady=5)
+        self.send_btn.grid(row=7, column=7)
 
     def on_click(self, x, y, button, pressed):
         if pressed and button == Btn.middle:
