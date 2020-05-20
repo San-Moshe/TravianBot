@@ -10,7 +10,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 import CaptchaSolver
 import FileUtils
-from TravianContract import TroopsBarracksContract, TroopsFarmListContract, TroopsType, TroopsCustomFarmListContract, \
+from TravianContract import TroopsFarmListContract, TroopsType, TroopsCustomFarmListContract, \
     FarmRaidLink, FarmType
 
 
@@ -33,7 +33,8 @@ class TravianActions:
         username.send_keys(username_text)
         password.send_keys(password_text)
         self.driver.find_element_by_xpath("//input[@type='submit']").click()
-        self.web_driver_wait.until(EC.visibility_of_element_located((By.ID, "production")))
+        self.web_driver_wait.until(
+            EC.visibility_of_element_located((By.XPATH, r'//*[@id="side_navi"]/p[1]/a[3]')))
         self.driver.get(self.base_url + "farmlist.php")
         self.driver.implicitly_wait(2)
         farms = self.driver.find_elements_by_partial_link_text("Farm")
@@ -54,7 +55,7 @@ class TravianActions:
 
         self.web_driver_wait.until(EC.visibility_of_element_located((By.LINK_TEXT, farm_raid_text_link.value))).click()
         troop = self.web_driver_wait.until(EC.visibility_of_element_located(
-            (By.ID, TroopsCustomFarmListContract().get_troops_by_tribe(tribe, troops_raid_type))))
+            (By.ID, tribe.get_troops_for_custom_farm_list(troops_name=troops_raid_type))))
         troop.send_keys(number_of_troops)
         self.driver.find_element_by_xpath("//input[@type='radio'][@value = '4']").click()
         self.driver.find_element_by_xpath("//input[@type='submit']").click()
@@ -109,39 +110,32 @@ class TravianActions:
         self.last_oasis_raid_index += 1
         self._raid_farm_by_link(oasis, number_of_troops, troops_raid_type, tribe, FarmType.OASIS)
 
-    def train_soldiers_in_barracks(self, troops_type):
+    def train_soldiers_in_barracks(self, troops_type, tribe):
         self.driver.get(self.base_url + "village2.php")
-        self.web_driver_wait.until(
+        self.driver.get(self.web_driver_wait.until(
             EC.visibility_of_element_located((By.XPATH, "//area[contains(@alt,'Barracks')]"))).get_attribute("href")
-        troops_id = None
-        if troops_type == TroopsType.ATTACKER:
-            troops_id = TroopsBarracksContract.CLUBSWINGER
-        else:
-            troops_id = TroopsBarracksContract.SPEARMAN
-
+                        )
+        # self.driver.find_element_by_xpath("//*[@id='build']/form/table/tbody").find_element_by_xpath(
+        #     "//a[contains(@onclick, '_tf12')]")
+        troops_id = tribe.get_training_id_by_name(troops_name=troops_type)
         self.web_driver_wait.until(
-            EC.visibility_of_element_located(
-                (By.XPATH, r'//*[@id="build"] and [contains(@onclick, "troops_id)"]'))).click()
+            EC.visibility_of_element_located((By.XPATH, "//*[@id='build']/form/table/tbody"))).find_element_by_xpath(
+            f'//a[contains(@onclick, "{troops_id}")]').click()
         self.driver.find_element_by_id("btn_train").click()
 
-    def train_soldiers_in_stable(self, troops_type):
+    def train_soldiers_in_stable(self, troops_type, tribe):
         self.driver.get(self.base_url + "village2.php")
-        self.web_driver_wait.until(
-            EC.visibility_of_element_located((By.XPATH, "//area[contains(@alt,'Stable')]"))).get_attribute("href")
+        self.driver.get(self.web_driver_wait.until(
+            EC.visibility_of_element_located((By.XPATH, "//area[contains(@alt,'Stable')]"))).get_attribute("href"))
 
-        troops_id = None
-        if troops_type == TroopsType.ATTACKER:
-            troops_id = TroopsBarracksContract.CLUBSWINGER
-        else:
-            troops_id = TroopsBarracksContract.SPEARMAN
-
+        troops_id = tribe.get_training_id_by_name(troops_name=troops_type)
         self.web_driver_wait.until(
-            EC.visibility_of_element_located(
-                (By.XPATH, r'//*[@id="build"] and [contains(@onclick, "troops_id)"]'))).click()
+            EC.visibility_of_element_located((By.XPATH, "//*[@id='build']/form/table/tbody"))).find_element_by_xpath(
+            f'//a[contains(@onclick, "{troops_id}")]').click()
         self.driver.find_element_by_id("btn_train").click()
 
     def add_farm_account_to_farm_list(self, tribe, troops_raid_type, number_of_soldiers):
-        self.driver.get(self.base_url + "profile.php?uid=13")
+        self.driver.get(self.base_url + "profile.php?uid=9")
         self.driver.implicitly_wait(2)
         elements = list(map(lambda element: element.find_element_by_xpath(".//a").get_attribute("href"),
                             tuple(self.web_driver_wait.until(

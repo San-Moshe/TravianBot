@@ -1,9 +1,72 @@
 from enum import Enum
 
 
-class TroopsBarracksContract:
-    CLUBSWINGER = "_tf11"
-    SPEARMAN = "_tf12"
+class TroopType(Enum):
+    INFANTRY = "INFANTRY",
+    CAVALRY = "CAVALRY"
+
+
+class TribeInterface:
+    def get_training_id_by_name(self, troops_name) -> str:
+        pass
+
+    def get_troops_for_custom_farm_list(self, troops_name) -> str:
+        pass
+
+    def get_troops_for_farm_list(self, troops_name) -> str:
+        pass
+
+    def get_troops_select_for_farm_list(self, troops_name) -> str:
+        pass
+
+    def get_troops_by_type(self, troops_type):
+        pass
+
+    def get_troops(self) -> str:
+        pass
+
+
+class Troop:
+    def __init__(self, name, training_id, raid_id, farm_list_id, farm_list_selection_id, troop_type):
+        self.name = name
+        self.training_id = training_id
+        self.raid_id = raid_id
+        self.farm_list_id = farm_list_id
+        self.farm_list_selection_id = farm_list_selection_id
+        self.troop_type = troop_type
+
+
+class TeutonsTribe(TribeInterface):
+    display_name = "Teutons"
+    troops = {"Clubswinger": Troop("Clubswinger", "_tf11", "t1", "unit1", "u1", TroopType.INFANTRY),
+              "Spearman": Troop("Spearman", "_tf12", "t2", "unit2", "u2", TroopType.INFANTRY),
+              "Axeman": Troop("Axeman", "_tf13", "t3", "unit3", "u3", TroopType.INFANTRY),
+              "Scout": Troop("Scout", "_tf14", "t4", "", "", TroopType.INFANTRY),
+              "Paladin": Troop("Paladin", "_tf15", "t5", "unit5", "u5", TroopType.CAVALRY),
+              "Teutonic Knight": Troop("Teutonic Knight", "_tf16", "t6", "unit6", "u6", TroopType.CAVALRY)}
+
+    def get_training_id_by_name(self, troops_name) -> str:
+        return self.troops[troops_name].training_id
+
+    def get_troops_for_custom_farm_list(self, troops_name) -> str:
+        return self.troops[troops_name].raid_id
+
+    def get_troops_for_farm_list(self, troops_name) -> str:
+        return self.troops[troops_name].farm_list_id
+
+    def get_troops_select_for_farm_list(self, troops_name) -> str:
+        return self.troops[troops_name].farm_list_selection_id
+
+    def get_troops_by_type(self, troops_type):
+        return [troop.name for troop in self.troops.values() if troop.troop_type == troops_type]
+
+    def get_troops(self):
+        return tuple(map(lambda troop: troop.name, self.troops.values()))
+
+
+def create_tribe_for_name(tribe_name) -> TribeInterface:
+    if tribe_name == Tribe.TEUTONS:
+        return TeutonsTribe()
 
 
 class TroopsStableContract:
